@@ -1,0 +1,176 @@
+.product-detail { padding-top: var(--navbar-h, 64px); }
+
+/* NAV BAR */
+.product-detail__nav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-top: 20px;
+  padding-bottom: 12px;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.product-detail__back {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--sage-dark);
+  text-decoration: none;
+  transition: gap 0.2s;
+  padding: 8px 0;
+  min-height: 44px; /* touch target */
+}
+.product-detail__back:hover { gap: 10px; }
+
+.product-detail__breadcrumb {
+  font-size: 0.78rem;
+  color: var(--text-light);
+}
+.product-detail__breadcrumb a {
+  color: var(--text-light);
+  text-decoration: none;
+}
+.product-detail__breadcrumb a:hover { color: var(--sage-dark); }
+
+/* MAIN LAYOUT — side by side on desktop, stacked on mobile */
+.product-detail__main {
+  display: grid;
+  grid-template-columns: 55% 45%;
+  gap: 40px;
+  padding-top: 12px;
+  padding-bottom: 64px;
+  align-items: start;
+}
+
+/* INFO */
+.product-detail__title-row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  margin: 10px 0;
+}
+
+.product-detail__name {
+  font-family: var(--font-serif);
+  font-size: clamp(1.6rem, 4vw, 2.5rem);
+  font-weight: 500;
+  color: var(--text-dark);
+  line-height: 1.2;
+}
+
+.product-detail__heart {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  border: 1.5px solid var(--border);
+  background: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-light);
+  flex-shrink: 0;
+  transition: all 0.25s;
+  cursor: pointer;
+}
+.product-detail__heart:hover { border-color: #e53e3e; }
+.product-detail__heart.active { color: #e53e3e; border-color: #e53e3e; background: #fff5f5; }
+
+.product-detail__divider {
+  height: 1px;
+  background: var(--border);
+  margin: 14px 0;
+}
+
+.product-detail__section { margin-bottom: 20px; }
+
+.product-detail__section-label {
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--gold);
+  margin-bottom: 10px;
+}
+
+.product-detail__selected-size {
+  color: var(--sage-dark);
+  font-size: 0.8rem;
+}
+
+/* SIZES */
+.product-detail__sizes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.product-detail__size-btn {
+  min-width: 52px;
+  min-height: 44px; /* touch target */
+  padding: 10px 16px;
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius-sm);
+  font-family: var(--font-sans);
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--text-mid);
+  cursor: pointer;
+  background: white;
+  transition: all 0.2s ease;
+}
+.product-detail__size-btn:hover {
+  border-color: var(--sage-light);
+  background: var(--sage-mist);
+}
+.product-detail__size-btn.active {
+  border-color: var(--sage-dark);
+  background: var(--sage-dark);
+  color: white;
+  box-shadow: 0 2px 8px rgba(44, 90, 62, 0.3);
+}
+
+.product-detail__whatsapp-desktop { margin-top: 28px; }
+
+/* RELATED */
+.product-detail__related {
+  background: var(--cream);
+  padding: 56px 0;
+}
+.product-detail__related-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 20px;
+  margin-top: 28px;
+}
+
+/* ======================
+   MOBILE
+   ====================== */
+@media (max-width: 768px) {
+  .product-detail { padding-top: var(--navbar-h, 60px); }
+
+  .product-detail__main {
+    grid-template-columns: 1fr;
+    gap: 20px;
+    padding-bottom: 110px; /* space for sticky WA button */
+  }
+
+  /* gallery comes first (already first in DOM) */
+  .product-detail__nav { padding-top: 12px; }
+  .product-detail__breadcrumb { display: none; }
+  .product-detail__whatsapp-desktop { display: none; }
+
+  .product-detail__related { padding: 40px 0; }
+  .product-detail__related-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
+  }
+}
+
+@media (max-width: 380px) {
+  .product-detail__size-btn { min-width: 44px; padding: 8px 12px; font-size: 0.8rem; }
+}

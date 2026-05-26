@@ -1,0 +1,29 @@
+.intro-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  overflow: hidden; /* Prevent scaled video child from causing horizontal scrolling */
+  background-color: #ffffff; /* Assumes a white or light background matches the logo video */
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: opacity 1.2s ease-in-out, visibility 1.2s ease-in-out;
+  opacity: 1;
+  visibility: visible;
+}
+
+.intro-overlay.fade-out {
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+}
+
+.intro-video {
+  width: 100%;
+  height: 100%;
+  object-fit: cover; /* Fills the screen completely, removing white space */
+  transform: scale(1.15); /* Zooms in slightly to crop out the 'Veo' watermark in the corner */
+}
