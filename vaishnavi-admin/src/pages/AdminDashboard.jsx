@@ -111,7 +111,7 @@ const AdminDashboard = () => {
               ['Store Name', 'Vaishnavi Collections'],
               ['Location', 'Badangpet, Hyderabad'],
               ['WhatsApp', '+91 9059899695'],
-              ['Admin Email', 'shivashapure21@gmail.com'],
+              ['Admin Email', 'sai1411sk@gmail.com'],
             ].map(([k, v]) => (
               <div key={k} style={{ padding: '12px 16px', background: 'var(--sage-mist)', borderRadius: 'var(--radius-sm)' }}>
                 <div style={{ fontSize: '0.7rem', fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--text-light)', marginBottom: 4 }}>{k}</div>

@@ -55,7 +55,7 @@ const AdminLogin = () => {
               className="form-input"
               value={email}
               onChange={e => setEmail(e.target.value)}
-              placeholder="shivashapure21@gmail.com"
+              placeholder="sai1411sk@gmail.com"
               required
               autoFocus
             />
