@@ -48,10 +48,15 @@
 /* INFO */
 .product-detail__title-row {
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   justify-content: space-between;
   gap: 12px;
   margin: 10px 0;
+  /* Option B — Full gold pill bar, solid and clean */
+  background: #F5E8C8;
+  border: 0.5px solid #D4A843;
+  border-radius: var(--radius-sm);
+  padding: 10px 14px 10px 16px;
 }
 
 .product-detail__name {

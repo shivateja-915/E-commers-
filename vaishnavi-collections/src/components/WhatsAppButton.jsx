@@ -4,12 +4,19 @@ import './WhatsAppButton.css';
 
 const WhatsAppButton = ({ productId, productName, selectedSize, isOutOfStock }) => {
   const number = import.meta.env.VITE_WHATSAPP_NUMBER;
-  const isDisabled = !selectedSize;
+  const isSizeMissing = !selectedSize;
   const [clicked, setClicked] = useState(false);
+  const [showError, setShowError] = useState(false);
 
   const handleClick = () => {
-    if (isDisabled || isOutOfStock) return;
+    if (isOutOfStock) return;
     
+    if (isSizeMissing) {
+      setShowError(true);
+      setTimeout(() => setShowError(false), 2500);
+      return;
+    }
+
     // trigger animation
     setClicked(true);
     setTimeout(() => setClicked(false), 600);
@@ -39,13 +46,18 @@ const WhatsAppButton = ({ productId, productName, selectedSize, isOutOfStock }) 
 
   return (
     <div className="whatsapp-wrap">
-      {isDisabled && (
-        <p className="whatsapp-hint">Please select a size to continue</p>
-      )}
+      {isSizeMissing ? (
+        showError ? (
+          <p className="whatsapp-hint" style={{ color: '#d93025', fontWeight: 600 }}>
+            Please select a size first!
+          </p>
+        ) : (
+          <p className="whatsapp-hint">Please select a size to continue</p>
+        )
+      ) : null}
       <button
         className={`btn-whatsapp cool-whatsapp-btn ${clicked ? 'btn-clicked' : ''}`}
         onClick={handleClick}
-        disabled={isDisabled}
       >
         <span className="cool-whatsapp-bg"></span>
         <span className="cool-whatsapp-content">
