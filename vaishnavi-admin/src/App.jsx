@@ -50,7 +50,7 @@ const Sidebar = () => {
           </NavLink>
         ))}
         <a
-          href="http://localhost:5173"
+          href="https://e-commers-two-eta.vercel.app"
           target="_blank"
           rel="noopener noreferrer"
           className="sidebar__nav-item sidebar__nav-item--store"
