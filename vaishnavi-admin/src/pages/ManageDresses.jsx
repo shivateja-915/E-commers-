@@ -102,6 +102,7 @@ const ManageDresses = () => {
                     <th>ID</th>
                     <th>Name</th>
                     <th>Sizes</th>
+                    <th>Price</th>
                     <th>Featured</th>
                     <th>Status</th>
                     <th>Actions</th>
@@ -122,8 +123,20 @@ const ManageDresses = () => {
                         )}
                       </td>
                       <td style={{ fontWeight: 600, color: 'var(--gold)' }}>#{p.display_id}</td>
-                      <td style={{ fontWeight: 500, maxWidth: 200 }}>{p.name}</td>
+                      <td style={{ fontWeight: 500, maxWidth: 220 }}>
+                        {p.super_heading && (
+                          <div style={{ fontSize: '0.65rem', fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--sage-dark)', opacity: 0.6, marginBottom: 2 }}>
+                            {p.super_heading}
+                          </div>
+                        )}
+                        {p.name}
+                      </td>
                       <td style={{ fontSize: '0.8rem', color: 'var(--text-light)' }}>{(p.sizes || []).join(', ') || '—'}</td>
+                      <td style={{ fontWeight: 600, color: 'var(--sage-dark)', fontSize: '0.9rem', whiteSpace: 'nowrap' }}>
+                        {p.price != null
+                          ? new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 }).format(p.price)
+                          : <span style={{ color: 'var(--text-light)' }}>—</span>}
+                      </td>
                       <td>
                         {p.is_featured
                           ? <span className="status-badge status-badge--gold">⭐ Yes</span>

@@ -48,7 +48,11 @@ const ProductCard = ({ product }) => {
 
       <div className="product-card__info">
         <span className="tag" style={{ background: '#fef9ec', color: 'var(--gold)', fontWeight: 600 }}>ID: #{product.display_id}</span>
-        <h3 className="product-card__name">{product.name}</h3>
+        {product.super_heading ? (
+          <p className="product-card__super-heading">{product.super_heading}</p>
+        ) : (
+          <h3 className="product-card__name">{product.name}</h3>
+        )}
         <div className="product-card__sizes">
           {(product.sizes || []).slice(0, 4).map(s => (
             <span key={s} className="product-card__size">{s}</span>

@@ -48,11 +48,15 @@ const AddDress = () => {
 
   const [form, setForm] = useState({
     name: '',
+    super_heading: '',
     sizes: [],
     description: DESCRIPTION_TEMPLATE,
     is_featured: false,
     is_favourite: false,
     badge_text: '',
+    price: '',
+    price_display: '',
+    show_price: true,
   });
   const [images, setImages] = useState([null, null, null, null, null, null]);
   const [previews, setPreviews] = useState([null, null, null, null, null, null]);
@@ -73,11 +77,15 @@ const AddDress = () => {
           if (data) {
             setForm({
               name: data.name || '',
+              super_heading: data.super_heading || '',
               sizes: data.sizes || [],
               description: data.description || DESCRIPTION_TEMPLATE,
               is_featured: data.is_featured || false,
               is_favourite: data.is_favourite || false,
               badge_text: data.badge_text || '',
+              price: data.price != null ? String(data.price) : '',
+              price_display: data.price_display || '',
+              show_price: data.show_price !== false,
             });
             setExistingUrls(data.images || []);
           }
@@ -157,12 +165,16 @@ const AddDress = () => {
 
       const productData = {
         name: form.name.trim(),
+        super_heading: form.super_heading.trim() || null,
         slug: isEdit ? undefined : generateSlug(form.name.trim()),
         sizes: form.sizes,
         description: form.description,
         is_featured: form.is_featured,
         is_favourite: form.is_favourite,
         badge_text: form.badge_text.trim() || null,
+        price: form.price !== '' ? parseFloat(form.price) : null,
+        price_display: form.price_display.trim() || null,
+        show_price: form.show_price,
         images: allImages,
         is_available: true,
         updated_at: new Date().toISOString(),
@@ -239,7 +251,20 @@ const AddDress = () => {
                   Basic Info
                 </h3>
                 <div className="form-group">
-                  <label className="form-label">Dress Name <span>*</span></label>
+                  <label className="form-label">
+                    Super Heading <span style={{ color: 'var(--text-light)', fontWeight: 400 }}>(Collection label — visible in Shop)</span>
+                  </label>
+                  <input
+                    type="text" className="form-input"
+                    value={form.super_heading} onChange={e => setForm({ ...form, super_heading: e.target.value })}
+                    placeholder="e.g. Ethnic Wear · Women's Collection · New Arrivals"
+                  />
+                  <div style={{ fontSize: '0.72rem', color: 'var(--text-light)', marginTop: 5, lineHeight: 1.4 }}>
+                    Shows above the dress name in the Shop card and on the product page. Use for collection/category labels.
+                  </div>
+                </div>
+                <div className="form-group">
+                  <label className="form-label">Dress Name / Heading <span>*</span></label>
                   <input
                     type="text" className="form-input"
                     value={form.name} onChange={e => setForm({ ...form, name: e.target.value })}
@@ -253,6 +278,36 @@ const AddDress = () => {
                     value={form.badge_text} onChange={e => setForm({ ...form, badge_text: e.target.value })}
                     placeholder="e.g. New Arrival, Bestseller"
                   />
+                </div>
+                <div className="form-group">
+                  <label className="form-label">Price (₹) <span style={{ color: 'var(--text-light)', fontWeight: 400 }}>(optional)</span></label>
+                  <input
+                    type="number" className="form-input"
+                    value={form.price} onChange={e => setForm({ ...form, price: e.target.value })}
+                    placeholder="e.g. 1499"
+                    min="0"
+                    step="1"
+                  />
+                </div>
+                <div className="form-group">
+                  <label className="form-label">Price Display Text <span style={{ color: 'var(--text-light)', fontWeight: 400 }}>(overrides number, optional)</span></label>
+                  <input
+                    type="text" className="form-input"
+                    value={form.price_display} onChange={e => setForm({ ...form, price_display: e.target.value })}
+                    placeholder="e.g. ₹1,499 or Contact for price"
+                  />
+                </div>
+                <div className="form-group">
+                  <label className="toggle-wrap" style={{ cursor: 'pointer' }}>
+                    <div className="toggle">
+                      <input type="checkbox" checked={form.show_price} onChange={e => setForm({ ...form, show_price: e.target.checked })} />
+                      <span className="toggle-slider"></span>
+                    </div>
+                    <div>
+                      <div style={{ fontWeight: 500, fontSize: '0.9rem' }}>Show Price on Product Page</div>
+                      <div style={{ fontSize: '0.75rem', color: 'var(--text-light)' }}>Toggle whether the price is visible to customers</div>
+                    </div>
+                  </label>
                 </div>
                 <div className="form-group">
                   <label className="form-label">Sizes Available</label>

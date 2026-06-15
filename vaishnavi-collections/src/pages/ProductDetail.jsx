@@ -60,11 +60,21 @@ const ProductDetail = () => {
 
   const fav = isFavourite(product.id);
 
+  // Format price — respects show_price flag and optional price_display text override
+  const showPrice = product.show_price !== false && (product.price != null || product.price_display);
+  const rawPrice = showPrice
+    ? (product.price_display || new Intl.NumberFormat('en-IN', { maximumFractionDigits: 0 }).format(product.price))
+    : null;
+
   return (
     <div className="product-detail floral-bg page-enter">
       <div className="product-detail__nav container">
+        {/* Beautiful Back to Shop button */}
         <Link to="/shop" className="product-detail__back">
-          <AiOutlineArrowLeft size={16} /> Back to Shop
+          <span className="product-detail__back-arrow">
+            <AiOutlineArrowLeft size={15} />
+          </span>
+          <span className="product-detail__back-text">Back to Shop</span>
         </Link>
         <span className="product-detail__breadcrumb">
           <Link to="/">Home</Link> / <Link to="/shop">Shop</Link> / {product.name}
@@ -72,43 +82,34 @@ const ProductDetail = () => {
       </div>
 
       <div className="product-detail__main container">
-        {/* Image Gallery */}
+        {/* LEFT: Gallery Column */}
         <div className="product-detail__gallery">
-          <ImageGallery images={product.images || []} productName={product.name} />
-        </div>
 
-        {/* Product Info */}
-        <div className="product-detail__info">
-          <span className="tag" style={{ background: '#fef9ec', color: 'var(--gold)', fontWeight: 600 }}>ID: #{product.display_id}</span>
-          {product.badge_text && (
-            <span className="tag" style={{ marginLeft: 8, background: 'var(--gold)', color: 'white' }}>
-              {product.badge_text}
-            </span>
-          )}
+          {/* Title box — at top of gallery, ID pinned to right */}
+          <div className="product-detail__title-box">
+            {/* ID badge — right top */}
+            <span className="product-detail__id-badge">#{product.display_id}</span>
 
-          <div className="product-detail__title-row">
+            {/* Badge text if any */}
+            {product.badge_text && (
+              <span className="product-detail__badge-pill">{product.badge_text}</span>
+            )}
+
+            {/* Super heading (subtitle/collection label) */}
+            {product.super_heading && (
+              <p className="product-detail__super-heading">{product.super_heading}</p>
+            )}
+
+            {/* Main product name */}
             <h1 className="product-detail__name">{product.name}</h1>
-            <button
-              className={`product-detail__heart ${fav ? 'active' : ''}`}
-              onClick={() => toggleFavourite(product.id)}
-            >
-              {fav ? <AiFillHeart size={24} /> : <AiOutlineHeart size={24} />}
-            </button>
           </div>
 
-          <div className="product-detail__divider" />
+          {/* Image Gallery with swipe + zoom */}
+          <ImageGallery images={product.images || []} productName={product.name} />
 
-          {/* Description */}
-          {product.description && (
-            <div className="product-detail__section">
-              <h3 className="product-detail__section-label">Description</h3>
-              <DescriptionBox description={product.description} />
-            </div>
-          )}
-
-          {/* Sizes */}
+          {/* Available Sizes — below images, circle style */}
           {product.sizes?.length > 0 && product.in_stock !== false && (
-            <div className="product-detail__section">
+            <div className="product-detail__sizes-panel">
               <h3 className="product-detail__section-label">
                 Available Sizes
                 {selectedSize && <span className="product-detail__selected-size"> — {selectedSize}</span>}
@@ -127,12 +128,53 @@ const ProductDetail = () => {
             </div>
           )}
 
-          <WhatsAppButton
-            productId={product.display_id}
-            productName={product.name}
-            selectedSize={selectedSize}
-            isOutOfStock={product.in_stock === false}
-          />
+          {/* Price + Add to Favourites Row */}
+          <div className="product-detail__price-fav-row">
+            {/* Add to Favourites Button — left */}
+            <button
+              className={`product-detail__fav-btn ${fav ? 'active' : ''}`}
+              onClick={() => toggleFavourite(product.id)}
+              aria-label={fav ? 'Remove from favourites' : 'Add to favourites'}
+            >
+              {fav ? <AiFillHeart size={18} /> : <AiOutlineHeart size={18} />}
+              <span>{fav ? 'Saved' : 'Add to Favourites'}</span>
+            </button>
+
+            {/* Price display — right */}
+            {rawPrice && (
+              <div className="product-detail__price-bar">
+                <span className="product-detail__price-label">PRICE</span>
+                <span className="product-detail__price-value">
+                  {!product.price_display && <span className="product-detail__price-rupee">₹</span>}
+                  {rawPrice}
+                </span>
+              </div>
+            )}
+          </div>
+
+        </div>
+
+        {/* RIGHT: Info Column */}
+        <div className="product-detail__info">
+          <div className="product-detail__divider" />
+
+          {/* Description */}
+          {product.description && (
+            <div className="product-detail__section">
+              <h3 className="product-detail__section-label">Description</h3>
+              <DescriptionBox description={product.description} />
+            </div>
+          )}
+
+          {/* WhatsApp — after description */}
+          <div className="product-detail__whatsapp">
+            <WhatsAppButton
+              productId={product.display_id}
+              productName={product.name}
+              selectedSize={selectedSize}
+              isOutOfStock={product.in_stock === false}
+            />
+          </div>
         </div>
       </div>
 
