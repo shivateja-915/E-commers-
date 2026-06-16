@@ -66,6 +66,14 @@ const ProductDetail = () => {
     ? (product.price_display || new Intl.NumberFormat('en-IN', { maximumFractionDigits: 0 }).format(product.price))
     : null;
 
+  // Discount calculations
+  const discountEnabled = product.discount_enabled && product.discount_original_price && product.discount_value;
+  const discountedPrice = discountEnabled
+    ? (product.discount_type === 'percentage'
+      ? product.discount_original_price - (product.discount_original_price * product.discount_value / 100)
+      : product.discount_original_price - product.discount_value)
+    : null;
+
   return (
     <div className="product-detail floral-bg page-enter">
       <div className="product-detail__nav container">
@@ -130,24 +138,54 @@ const ProductDetail = () => {
 
           {/* Price + Add to Favourites Row */}
           <div className="product-detail__price-fav-row">
-            {/* Add to Favourites Button — left */}
-            <button
-              className={`product-detail__fav-btn ${fav ? 'active' : ''}`}
-              onClick={() => toggleFavourite(product.id)}
-              aria-label={fav ? 'Remove from favourites' : 'Add to favourites'}
-            >
-              {fav ? <AiFillHeart size={18} /> : <AiOutlineHeart size={18} />}
-              <span>{fav ? 'Saved' : 'Add to Favourites'}</span>
-            </button>
+            {/* Left Column: Fav Button + Offer Label */}
+            <div className="product-detail__fav-col">
+              <button
+                className={`product-detail__fav-btn ${fav ? 'active' : ''}`}
+                onClick={() => toggleFavourite(product.id)}
+                aria-label={fav ? 'Remove from favourites' : 'Add to favourites'}
+              >
+                {fav ? <AiFillHeart size={18} /> : <AiOutlineHeart size={18} />}
+                <span>{fav ? 'Saved' : 'Add to Favourites'}</span>
+              </button>
+
+              {/* Offer Label — shown below the favourite button */}
+              {discountEnabled && product.discount_offer_label && (
+                <div className="product-detail__offer-label">
+                  🏷️ {product.discount_offer_label}
+                </div>
+              )}
+            </div>
 
             {/* Price display — right */}
-            {rawPrice && (
+            {rawPrice && !discountEnabled && (
               <div className="product-detail__price-bar">
                 <span className="product-detail__price-label">PRICE</span>
                 <span className="product-detail__price-value">
                   {!product.price_display && <span className="product-detail__price-rupee">₹</span>}
                   {rawPrice}
                 </span>
+              </div>
+            )}
+            {/* Discount price block — Amazon/Myntra style */}
+            {discountEnabled && (
+              <div className="product-detail__discount-bar">
+                <div className="product-detail__discount-top">
+                  <span className="product-detail__discount-sale">₹{Number(discountedPrice).toLocaleString('en-IN', { maximumFractionDigits: 0 })}</span>
+                  <span className="product-detail__discount-badge">
+                    {/* Badge always shows the % or ₹ calculation */}
+                    {product.discount_type === 'percentage'
+                      ? `${product.discount_value}% OFF`
+                      : `₹${Number(product.discount_value).toLocaleString('en-IN')} OFF`}
+                  </span>
+                </div>
+                <div className="product-detail__discount-mrp">
+                  <span className="product-detail__discount-mrp-label">MRP</span>
+                  <span className="product-detail__discount-mrp-value">₹{Number(product.discount_original_price).toLocaleString('en-IN')}</span>
+                </div>
+                <div className="product-detail__discount-save">
+                  You save ₹{Number(product.discount_original_price - discountedPrice).toLocaleString('en-IN', { maximumFractionDigits: 0 })}
+                </div>
               </div>
             )}
           </div>

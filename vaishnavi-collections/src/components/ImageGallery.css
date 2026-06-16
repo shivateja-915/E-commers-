@@ -19,11 +19,6 @@
   box-shadow: 0 8px 32px rgba(44, 90, 62, 0.12);
 }
 
-.image-gallery__main.zoomed {
-  background-repeat: no-repeat;
-  border-radius: var(--radius-md);
-}
-
 .image-gallery__main-img {
   width: 100%;
   height: 100%;
@@ -36,6 +31,28 @@
   from { opacity: 0.4; transform: scale(1.03); }
   to   { opacity: 1;   transform: scale(1); }
 }
+
+/* ZOOM HINT */
+.image-gallery__zoom-hint {
+  position: absolute;
+  bottom: 12px;
+  right: 12px;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  background: rgba(0,0,0,0.5);
+  color: white;
+  font-size: 0.65rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  padding: 5px 10px;
+  border-radius: 20px;
+  backdrop-filter: blur(4px);
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.25s;
+}
+.image-gallery__main:hover .image-gallery__zoom-hint { opacity: 1; }
 
 /* ARROWS */
 .image-gallery__arrow {
@@ -132,6 +149,142 @@
   opacity: 1;
 }
 
+/* ==============================
+   LIGHTBOX OVERLAY
+   ============================== */
+.lightbox-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.95);
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: lbFadeIn 0.2s ease;
+}
+@keyframes lbFadeIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+.lightbox-canvas {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  position: absolute;
+  inset: 0;
+}
+
+.lightbox-img {
+  max-width: 92vw;
+  max-height: 90vh;
+  object-fit: contain;
+  transition: transform 0.05s linear;
+  pointer-events: none;
+  border-radius: 4px;
+  box-shadow: 0 20px 80px rgba(0,0,0,0.6);
+}
+
+/* CLOSE */
+.lightbox-close {
+  position: absolute;
+  top: 16px;
+  right: 20px;
+  z-index: 10001;
+  width: 44px;
+  height: 44px;
+  background: rgba(255,255,255,0.15);
+  color: white;
+  border: 1px solid rgba(255,255,255,0.3);
+  border-radius: 50%;
+  font-size: 1.2rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  backdrop-filter: blur(4px);
+  transition: background 0.2s, transform 0.2s;
+}
+.lightbox-close:hover { background: rgba(255,255,255,0.3); transform: scale(1.1); }
+
+/* COUNTER */
+.lightbox-counter {
+  position: absolute;
+  top: 22px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 10001;
+  color: rgba(255,255,255,0.8);
+  font-size: 0.8rem;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  background: rgba(0,0,0,0.4);
+  padding: 4px 14px;
+  border-radius: 20px;
+  backdrop-filter: blur(4px);
+}
+
+/* PREV / NEXT */
+.lightbox-arrow {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 10001;
+  width: 52px;
+  height: 52px;
+  background: rgba(255,255,255,0.15);
+  border: 1px solid rgba(255,255,255,0.25);
+  color: white;
+  border-radius: 50%;
+  font-size: 2rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  backdrop-filter: blur(4px);
+  transition: background 0.2s, transform 0.2s;
+}
+.lightbox-arrow--prev { left: 20px; }
+.lightbox-arrow--next { right: 20px; }
+.lightbox-arrow:hover { background: rgba(255,255,255,0.3); transform: translateY(-50%) scale(1.08); }
+
+/* HINT */
+.lightbox-hint {
+  position: absolute;
+  bottom: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 10001;
+  color: rgba(255,255,255,0.55);
+  font-size: 0.72rem;
+  letter-spacing: 0.06em;
+  pointer-events: none;
+  white-space: nowrap;
+}
+
+/* RESET ZOOM */
+.lightbox-reset {
+  position: absolute;
+  bottom: 44px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 10001;
+  background: rgba(255,255,255,0.15);
+  color: white;
+  border: 1px solid rgba(255,255,255,0.3);
+  border-radius: 20px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  padding: 6px 18px;
+  cursor: pointer;
+  backdrop-filter: blur(4px);
+  transition: background 0.2s;
+}
+.lightbox-reset:hover { background: rgba(255,255,255,0.3); }
+
 /* MOBILE adjustments */
 @media (max-width: 768px) {
   .image-gallery__main {
@@ -148,4 +301,13 @@
     height: 34px;
     font-size: 1.3rem;
   }
+  .image-gallery__zoom-hint { opacity: 0.85; }
+  .lightbox-arrow {
+    width: 40px;
+    height: 40px;
+    font-size: 1.5rem;
+  }
+  .lightbox-arrow--prev { left: 8px; }
+  .lightbox-arrow--next { right: 8px; }
+  .lightbox-hint { display: none; }
 }

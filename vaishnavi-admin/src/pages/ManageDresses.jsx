@@ -133,9 +133,22 @@ const ManageDresses = () => {
                       </td>
                       <td style={{ fontSize: '0.8rem', color: 'var(--text-light)' }}>{(p.sizes || []).join(', ') || '—'}</td>
                       <td style={{ fontWeight: 600, color: 'var(--sage-dark)', fontSize: '0.9rem', whiteSpace: 'nowrap' }}>
-                        {p.price != null
-                          ? new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 }).format(p.price)
-                          : <span style={{ color: 'var(--text-light)' }}>—</span>}
+                        {p.discount_enabled && p.discount_original_price && p.discount_value ? (
+                          <div style={{ display: 'flex', flexDirection: 'column' }}>
+                            <span style={{ fontSize: '0.7rem', color: 'var(--text-light)', textDecoration: 'line-through' }}>
+                              ₹{p.discount_original_price.toLocaleString('en-IN')}
+                            </span>
+                            <span>
+                              ₹{(p.discount_type === 'percentage'
+                                ? p.discount_original_price - (p.discount_original_price * p.discount_value / 100)
+                                : p.discount_original_price - p.discount_value).toLocaleString('en-IN', { maximumFractionDigits: 0 })}
+                            </span>
+                          </div>
+                        ) : p.price != null ? (
+                          new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 }).format(p.price)
+                        ) : (
+                          <span style={{ color: 'var(--text-light)' }}>—</span>
+                        )}
                       </td>
                       <td>
                         {p.is_featured

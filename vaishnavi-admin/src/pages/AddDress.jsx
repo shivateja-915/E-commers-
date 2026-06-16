@@ -57,6 +57,12 @@ const AddDress = () => {
     price: '',
     price_display: '',
     show_price: true,
+    // Discount fields
+    discount_enabled: false,
+    discount_original_price: '',
+    discount_type: 'percentage',
+    discount_value: '',
+    discount_offer_label: '',
   });
   const [images, setImages] = useState([null, null, null, null, null, null]);
   const [previews, setPreviews] = useState([null, null, null, null, null, null]);
@@ -86,6 +92,12 @@ const AddDress = () => {
               price: data.price != null ? String(data.price) : '',
               price_display: data.price_display || '',
               show_price: data.show_price !== false,
+              // Discount fields
+              discount_enabled: data.discount_enabled || false,
+              discount_original_price: data.discount_original_price != null ? String(data.discount_original_price) : '',
+              discount_type: data.discount_type || 'percentage',
+              discount_value: data.discount_value != null ? String(data.discount_value) : '',
+              discount_offer_label: data.discount_offer_label || '',
             });
             setExistingUrls(data.images || []);
           }
@@ -163,6 +175,18 @@ const AddDress = () => {
 
       const allImages = [...existingUrls, ...uploadedUrls];
 
+      let effectivePrice = form.price !== '' ? parseFloat(form.price) : null;
+      let effectiveShowPrice = form.show_price;
+      
+      if (form.discount_enabled) {
+        const orig = parseFloat(form.discount_original_price) || 0;
+        const val = parseFloat(form.discount_value) || 0;
+        effectivePrice = form.discount_type === 'percentage'
+          ? orig - (orig * val / 100)
+          : orig - val;
+        effectiveShowPrice = true;
+      }
+
       const productData = {
         name: form.name.trim(),
         super_heading: form.super_heading.trim() || null,
@@ -172,12 +196,18 @@ const AddDress = () => {
         is_featured: form.is_featured,
         is_favourite: form.is_favourite,
         badge_text: form.badge_text.trim() || null,
-        price: form.price !== '' ? parseFloat(form.price) : null,
+        price: effectivePrice,
         price_display: form.price_display.trim() || null,
-        show_price: form.show_price,
+        show_price: effectiveShowPrice,
         images: allImages,
         is_available: true,
         updated_at: new Date().toISOString(),
+        // Discount fields
+        discount_enabled: form.discount_enabled,
+        discount_original_price: form.discount_original_price !== '' ? parseFloat(form.discount_original_price) : null,
+        discount_type: form.discount_type || 'percentage',
+        discount_value: form.discount_value !== '' ? parseFloat(form.discount_value) : null,
+        discount_offer_label: form.discount_offer_label.trim() || null,
       };
 
       // Remove undefined keys (slug on edit)
@@ -279,36 +309,43 @@ const AddDress = () => {
                     placeholder="e.g. New Arrival, Bestseller"
                   />
                 </div>
-                <div className="form-group">
-                  <label className="form-label">Price (₹) <span style={{ color: 'var(--text-light)', fontWeight: 400 }}>(optional)</span></label>
-                  <input
-                    type="number" className="form-input"
-                    value={form.price} onChange={e => setForm({ ...form, price: e.target.value })}
-                    placeholder="e.g. 1499"
-                    min="0"
-                    step="1"
-                  />
-                </div>
-                <div className="form-group">
-                  <label className="form-label">Price Display Text <span style={{ color: 'var(--text-light)', fontWeight: 400 }}>(overrides number, optional)</span></label>
-                  <input
-                    type="text" className="form-input"
-                    value={form.price_display} onChange={e => setForm({ ...form, price_display: e.target.value })}
-                    placeholder="e.g. ₹1,499 or Contact for price"
-                  />
-                </div>
-                <div className="form-group">
-                  <label className="toggle-wrap" style={{ cursor: 'pointer' }}>
-                    <div className="toggle">
-                      <input type="checkbox" checked={form.show_price} onChange={e => setForm({ ...form, show_price: e.target.checked })} />
-                      <span className="toggle-slider"></span>
+
+                {/* Regular Price Fields - Show only if discount is not enabled */}
+                {!form.discount_enabled && (
+                  <>
+                    <div className="form-group">
+                      <label className="form-label">Price (₹) <span style={{ color: 'var(--text-light)', fontWeight: 400 }}>(optional)</span></label>
+                      <input
+                        type="number" className="form-input"
+                        value={form.price} onChange={e => setForm({ ...form, price: e.target.value })}
+                        placeholder="e.g. 1499"
+                        min="0"
+                        step="1"
+                      />
                     </div>
-                    <div>
-                      <div style={{ fontWeight: 500, fontSize: '0.9rem' }}>Show Price on Product Page</div>
-                      <div style={{ fontSize: '0.75rem', color: 'var(--text-light)' }}>Toggle whether the price is visible to customers</div>
+                    <div className="form-group">
+                      <label className="form-label">Price Display Text <span style={{ color: 'var(--text-light)', fontWeight: 400 }}>(overrides number, optional)</span></label>
+                      <input
+                        type="text" className="form-input"
+                        value={form.price_display} onChange={e => setForm({ ...form, price_display: e.target.value })}
+                        placeholder="e.g. ₹1,499 or Contact for price"
+                      />
                     </div>
-                  </label>
-                </div>
+                    <div className="form-group">
+                      <label className="toggle-wrap" style={{ cursor: 'pointer' }}>
+                        <div className="toggle">
+                          <input type="checkbox" checked={form.show_price} onChange={e => setForm({ ...form, show_price: e.target.checked })} />
+                          <span className="toggle-slider"></span>
+                        </div>
+                        <div>
+                          <div style={{ fontWeight: 500, fontSize: '0.9rem' }}>Show Price on Product Page</div>
+                          <div style={{ fontSize: '0.75rem', color: 'var(--text-light)' }}>Toggle whether the price is visible to customers</div>
+                        </div>
+                      </label>
+                    </div>
+                  </>
+                )}
+
                 <div className="form-group">
                   <label className="form-label">Sizes Available</label>
                   <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
@@ -360,6 +397,123 @@ const AddDress = () => {
                     </div>
                   </label>
                 </div>
+              </div>
+
+              {/* ====== DISCOUNT CARD ====== */}
+              <div className="admin-card" style={{ marginBottom: 20, border: form.discount_enabled ? '1.5px solid #81c784' : '1px solid var(--border)' }}>
+                <label className="toggle-wrap" style={{ cursor: 'pointer', marginBottom: form.discount_enabled ? 20 : 0 }}>
+                  <div className="toggle">
+                    <input
+                      type="checkbox"
+                      checked={form.discount_enabled}
+                      onChange={e => setForm({ ...form, discount_enabled: e.target.checked })}
+                    />
+                    <span className="toggle-slider"></span>
+                  </div>
+                  <div>
+                    <div style={{ fontWeight: 600, fontSize: '0.95rem' }}>Enable Discount</div>
+                    <div style={{ fontSize: '0.75rem', color: 'var(--text-light)' }}>Amazon / Myntra style price drop with strikethrough MRP</div>
+                  </div>
+                </label>
+
+                {form.discount_enabled && (
+                  <>
+                    <div className="form-group" style={{ marginBottom: 16 }}>
+                      <label className="form-label">Original Price (₹)</label>
+                      <input
+                        type="number"
+                        className="form-input"
+                        value={form.discount_original_price}
+                        onChange={e => setForm({ ...form, discount_original_price: e.target.value })}
+                        placeholder="e.g. 2000"
+                        min="0"
+                        step="1"
+                      />
+                    </div>
+
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 16 }}>
+                      <div>
+                        <label className="form-label">Discount Type</label>
+                        <select
+                          className="form-input"
+                          value={form.discount_type}
+                          onChange={e => setForm({ ...form, discount_type: e.target.value })}
+                        >
+                          <option value="percentage">Percentage (%)</option>
+                          <option value="flat">Flat Amount (₹)</option>
+                        </select>
+                      </div>
+                      <div>
+                        <label className="form-label">Discount Value</label>
+                        <input
+                          type="number"
+                          className="form-input"
+                          value={form.discount_value}
+                          onChange={e => setForm({ ...form, discount_value: e.target.value })}
+                          placeholder={form.discount_type === 'percentage' ? 'e.g. 50' : 'e.g. 500'}
+                          min="0"
+                          step="0.01"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="form-group" style={{ marginBottom: 16 }}>
+                      <label className="form-label">Offer Label <span style={{ color: 'var(--text-light)', fontWeight: 400, textTransform: 'none' }}>(optional)</span></label>
+                      <input
+                        type="text"
+                        className="form-input"
+                        value={form.discount_offer_label}
+                        onChange={e => setForm({ ...form, discount_offer_label: e.target.value })}
+                        placeholder="e.g. Limited time offer"
+                      />
+                    </div>
+
+                    {/* Live Preview */}
+                    {form.discount_original_price && form.discount_value && (
+                      (() => {
+                        const orig = parseFloat(form.discount_original_price) || 0;
+                        const val = parseFloat(form.discount_value) || 0;
+                        const salePrice = form.discount_type === 'percentage'
+                          ? orig - (orig * val / 100)
+                          : orig - val;
+                        const saving = orig - salePrice;
+                        // Badge always shows the % or ₹ calculation — NEVER offer label
+                        const badgeText = form.discount_type === 'percentage'
+                          ? `${val}% OFF`
+                          : `₹${val.toLocaleString('en-IN')} OFF`;
+                        return (
+                          <div style={{
+                            background: 'linear-gradient(135deg, #f0fff4, #e8f5e9)',
+                            border: '1.5px solid #81c784',
+                            borderRadius: 8,
+                            padding: '14px 16px',
+                          }}>
+                            <div style={{ fontSize: '0.68rem', fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', color: '#1e8e3e', marginBottom: 8 }}>Live Preview</div>
+                            <div style={{ textDecoration: 'line-through', color: '#7a9082', fontSize: '0.85rem', marginBottom: 4 }}>
+                              ₹{orig.toLocaleString('en-IN')}
+                            </div>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 4 }}>
+                              <span style={{ fontSize: '1.6rem', fontWeight: 800, color: '#1a2e25' }}>
+                                ₹{salePrice.toLocaleString('en-IN', { maximumFractionDigits: 0 })}
+                              </span>
+                              <span style={{ background: '#ff6f00', color: 'white', fontSize: '0.72rem', fontWeight: 700, padding: '3px 10px', borderRadius: 4, textTransform: 'uppercase' }}>
+                                {badgeText}
+                              </span>
+                            </div>
+                            <div style={{ fontSize: '0.75rem', fontWeight: 600, color: '#1e8e3e', marginBottom: form.discount_offer_label ? 6 : 0 }}>
+                              You save ₹{saving.toLocaleString('en-IN', { maximumFractionDigits: 0 })}
+                            </div>
+                            {form.discount_offer_label && (
+                              <div style={{ display: 'inline-flex', alignItems: 'center', padding: '3px 10px', background: '#fff3e0', color: '#e65100', fontSize: '0.72rem', fontWeight: 600, borderRadius: 20, border: '1px solid #ffb74d', marginTop: 2 }}>
+                                🏷️ {form.discount_offer_label}
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })()
+                    )}
+                  </>
+                )}
               </div>
 
               <div className="admin-card" style={{ marginBottom: 20 }}>

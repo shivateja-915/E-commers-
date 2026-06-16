@@ -53,12 +53,29 @@ const ProductCard = ({ product }) => {
         ) : (
           <h3 className="product-card__name">{product.name}</h3>
         )}
-        <div className="product-card__sizes">
-          {(product.sizes || []).slice(0, 4).map(s => (
-            <span key={s} className="product-card__size">{s}</span>
-          ))}
-          {(product.sizes || []).length > 4 && <span className="product-card__size">+{product.sizes.length - 4}</span>}
-        </div>
+        {/* Discount price display */}
+        {product.discount_enabled && product.discount_original_price && product.discount_value ? (
+          <div className="product-card__price-wrap">
+            <span className="product-card__price-original">₹{Number(product.discount_original_price).toLocaleString('en-IN')}</span>
+            <span className="product-card__price-sale">₹{Number(product.discount_type === 'percentage'
+              ? product.discount_original_price - (product.discount_original_price * product.discount_value / 100)
+              : product.discount_original_price - product.discount_value).toLocaleString('en-IN', { maximumFractionDigits: 0 })}
+            </span>
+            <span className="product-card__off-badge">
+              {/* Always show % or ₹ calculation — never offer label */}
+              {product.discount_type === 'percentage'
+                ? `${product.discount_value}% off`
+                : `₹${Number(product.discount_value).toLocaleString('en-IN')} off`}
+            </span>
+          </div>
+        ) : (
+          /* Standard price display if no discount */
+          product.show_price !== false && (product.price != null || product.price_display) && (
+            <div className="product-card__price" style={{ fontSize: '0.9rem', fontWeight: 600, color: 'var(--text-dark)', marginTop: 4 }}>
+              {product.price_display || `₹${new Intl.NumberFormat('en-IN', { maximumFractionDigits: 0 }).format(product.price)}`}
+            </div>
+          )
+        )}
       </div>
     </div>
   );

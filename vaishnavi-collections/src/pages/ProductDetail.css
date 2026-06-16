@@ -142,6 +142,7 @@
 
 /* Super heading — collection label */
 .product-detail__super-heading {
+  font-family: var(--font-mono);
   font-size: 0.78rem;
   font-weight: 600;
   letter-spacing: 0.1em;
@@ -153,10 +154,12 @@
 }
 
 .product-detail__name {
-  font-family: var(--font-serif);
-  font-size: clamp(1.4rem, 3.5vw, 2.3rem);
-  font-weight: 500;
+  font-family: Georgia, 'Times New Roman', serif;
+  font-size: clamp(1.3rem, 3.5vw, 2.1rem);
+  font-weight: 700;
   color: var(--text-dark);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
   line-height: 1.2;
   margin: 2px 0 0;
   padding-right: 44px; /* don't overlap ID badge */
@@ -239,9 +242,17 @@
    ============================== */
 .product-detail__price-fav-row {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   gap: 10px;
   margin-top: 12px;
+}
+
+/* Left Column: Favourites Button + Offer Label wrapper */
+.product-detail__fav-col {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
 }
 
 /* ADD TO FAVOURITES BUTTON */
@@ -261,7 +272,7 @@
   transition: all 0.25s ease;
   min-height: 48px;
   white-space: nowrap;
-  flex: 1;
+  width: 100%;
   justify-content: center;
 }
 .product-detail__fav-btn:hover {
@@ -333,6 +344,85 @@
 }
 
 /* ==============================
+   DISCOUNT BAR — Amazon/Myntra style
+   ============================== */
+.product-detail__discount-bar {
+  flex: 1;
+  background: linear-gradient(135deg, #f0fff4, #e8f5e9);
+  border: 1.5px solid #81c784;
+  border-radius: var(--radius-sm);
+  padding: 12px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-height: 48px;
+  justify-content: center;
+}
+.product-detail__discount-top {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.product-detail__discount-sale {
+  font-family: var(--font-sans);
+  font-size: 1.6rem;
+  font-weight: 800;
+  color: #1a2e25;
+  line-height: 1;
+}
+.product-detail__discount-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 10px;
+  background: #ff6f00;
+  color: white;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  border-radius: 4px;
+  text-transform: uppercase;
+}
+.product-detail__discount-mrp {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.product-detail__discount-mrp-label {
+  font-size: 0.65rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--text-light);
+}
+.product-detail__discount-mrp-value {
+  font-size: 0.85rem;
+  color: var(--text-light);
+  text-decoration: line-through;
+  font-weight: 500;
+}
+.product-detail__discount-save {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #1e8e3e;
+}
+
+/* OFFER LABEL — shown below fav button */
+.product-detail__offer-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 14px;
+  background: #fff3e0;
+  color: #e65100;
+  font-size: 0.78rem;
+  font-weight: 600;
+  border-radius: 20px;
+  border: 1px solid #ffb74d;
+  margin-top: 0;
+  width: fit-content;
+}
+
+/* ==============================
    INFO COLUMN (RIGHT)
    ============================== */
 .product-detail__info {
@@ -385,13 +475,18 @@
   /* Price + Fav side by side on mobile */
   .product-detail__price-fav-row {
     flex-direction: row;
-    align-items: stretch;
+    align-items: flex-start;
     gap: 10px;
   }
 
-  .product-detail__fav-btn,
-  .product-detail__price-bar {
+  .product-detail__fav-col,
+  .product-detail__price-bar,
+  .product-detail__discount-bar {
     flex: 1;
+  }
+
+  .product-detail__fav-btn {
+    width: 100%;
     min-height: 50px;
     padding: 10px 12px;
   }
