@@ -1,8 +1,9 @@
 import React, { useState, useRef, useCallback, useEffect } from 'react';
+import { AiOutlineHeart, AiFillHeart } from 'react-icons/ai';
 import { getOptimizedUrl, getThumbnailUrl } from '../lib/cloudinary';
 import './ImageGallery.css';
 
-const ImageGallery = ({ images = [], productName }) => {
+const ImageGallery = ({ images = [], productName, isFavourite, onToggleFavourite }) => {
   const [activeIdx, setActiveIdx] = useState(0);
   const [lightboxOpen, setLightboxOpen] = useState(false);
 
@@ -19,7 +20,15 @@ const ImageGallery = ({ images = [], productName }) => {
   const panOrigin = useRef({ x: 0, y: 0 });
   const isPanning = useRef(false);
 
+  // Track body scroll position for lightbox fix
+  const scrollPosRef = useRef(0);
+
   const total = images.length;
+
+  // Reset activeIdx when images change (e.g. color variant switch)
+  useEffect(() => {
+    setActiveIdx(0);
+  }, [images]);
 
   // Close lightbox on ESC
   useEffect(() => {
@@ -33,10 +42,41 @@ const ImageGallery = ({ images = [], productName }) => {
     return () => window.removeEventListener('keydown', onKey);
   }, [lightboxOpen, activeIdx]);
 
-  // Prevent body scroll when lightbox open
+  // Prevent body scroll when lightbox open — full fix for iOS and desktop
   useEffect(() => {
-    document.body.style.overflow = lightboxOpen ? 'hidden' : '';
-    return () => { document.body.style.overflow = ''; };
+    if (lightboxOpen) {
+      scrollPosRef.current = window.scrollY;
+      document.body.style.overflow = 'hidden';
+      document.body.style.position = 'fixed';
+      document.body.style.top = `-${scrollPosRef.current}px`;
+      document.body.style.width = '100%';
+    } else {
+      document.body.style.overflow = '';
+      document.body.style.position = '';
+      document.body.style.top = '';
+      document.body.style.width = '';
+      window.scrollTo(0, scrollPosRef.current);
+    }
+    return () => {
+      document.body.style.overflow = '';
+      document.body.style.position = '';
+      document.body.style.top = '';
+      document.body.style.width = '';
+    };
+  }, [lightboxOpen]);
+
+  // Attach non-passive wheel listener for lightbox zoom
+  const lightboxCanvasRef = useRef(null);
+  useEffect(() => {
+    const canvas = lightboxCanvasRef.current;
+    if (!canvas || !lightboxOpen) return;
+    const handler = (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      setScale(s => Math.min(5, Math.max(1, s - e.deltaY * 0.001)));
+    };
+    canvas.addEventListener('wheel', handler, { passive: false });
+    return () => canvas.removeEventListener('wheel', handler);
   }, [lightboxOpen]);
 
   const openLightbox = () => {
@@ -122,12 +162,6 @@ const ImageGallery = ({ images = [], productName }) => {
     isPanning.current = false;
   };
 
-  /* ── Lightbox wheel zoom ── */
-  const handleLbWheel = (e) => {
-    e.preventDefault();
-    setScale(s => Math.min(5, Math.max(1, s - e.deltaY * 0.001)));
-  };
-
   /* ── Lightbox touch pan/pinch ── */
   const lbTouchStart = useRef([]);
   const lbTouchDist = useRef(null);
@@ -199,6 +233,21 @@ const ImageGallery = ({ images = [], productName }) => {
             draggable={false}
           />
 
+          {/* ❤ Floating Heart Button — top right of image */}
+          {onToggleFavourite && (
+            <button
+              className={`gallery-heart-btn ${isFavourite ? 'active' : ''}`}
+              onClick={(e) => { e.stopPropagation(); onToggleFavourite(); }}
+              onMouseDown={(e) => e.stopPropagation()}
+              onMouseUp={(e) => e.stopPropagation()}
+              onTouchStart={(e) => e.stopPropagation()}
+              onTouchEnd={(e) => e.stopPropagation()}
+              aria-label={isFavourite ? 'Remove from favourites' : 'Add to favourites'}
+            >
+              {isFavourite ? <AiFillHeart size={22} /> : <AiOutlineHeart size={22} />}
+            </button>
+          )}
+
           {/* Zoom hint */}
           <div className="image-gallery__zoom-hint">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/><line x1="11" y1="8" x2="11" y2="14"/><line x1="8" y1="11" x2="14" y2="11"/></svg>
@@ -269,6 +318,7 @@ const ImageGallery = ({ images = [], productName }) => {
         <div
           className="lightbox-overlay"
           onClick={(e) => { if (e.target === e.currentTarget) closeLightbox(); }}
+          style={{ touchAction: 'none' }}
         >
           {/* Close button */}
           <button className="lightbox-close" onClick={closeLightbox} aria-label="Close zoom">✕</button>
@@ -293,16 +343,16 @@ const ImageGallery = ({ images = [], productName }) => {
 
           {/* Image canvas */}
           <div
+            ref={lightboxCanvasRef}
             className="lightbox-canvas"
             onMouseDown={handleLbMouseDown}
             onMouseMove={handleLbMouseMove}
             onMouseUp={handleLbMouseUp}
             onMouseLeave={handleLbMouseUp}
-            onWheel={handleLbWheel}
             onTouchStart={handleLbTouchStart}
             onTouchMove={handleLbTouchMove}
             onTouchEnd={handleLbTouchEnd}
-            style={{ cursor: scale > 1 ? 'grab' : 'zoom-in' }}
+            style={{ cursor: scale > 1 ? 'grab' : 'zoom-in', touchAction: 'none' }}
           >
             <img
               src={fullImage}

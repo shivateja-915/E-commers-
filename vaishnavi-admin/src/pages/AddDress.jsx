@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { AiOutlineUpload, AiOutlineClose } from 'react-icons/ai';
+import { AiOutlineUpload, AiOutlineClose, AiOutlinePlus, AiOutlineDelete } from 'react-icons/ai';
 import { supabase } from '../lib/supabase';
 import { uploadToCloudinary } from '../lib/cloudinary';
 
@@ -41,6 +41,15 @@ const generateSlug = (name) => {
   return `${base}-${Date.now()}`;
 };
 
+const EMPTY_VARIANT = () => ({
+  name: '',
+  hex: '#C62828',
+  images: [null, null, null, null, null, null],
+  previews: [null, null, null, null, null, null],
+  existingUrls: [],
+  sizes: [],
+});
+
 const AddDress = () => {
   const navigate = useNavigate();
   const { id } = useParams();
@@ -63,6 +72,8 @@ const AddDress = () => {
     discount_type: 'percentage',
     discount_value: '',
     discount_offer_label: '',
+    default_color_name: 'Default',
+    default_color_hex: '#8B7355',
   });
   const [images, setImages] = useState([null, null, null, null, null, null]);
   const [previews, setPreviews] = useState([null, null, null, null, null, null]);
@@ -70,6 +81,10 @@ const AddDress = () => {
   const [uploading, setUploading] = useState(false);
   const [progress, setProgress] = useState([0, 0, 0, 0, 0, 0]);
   const [warnings, setWarnings] = useState([null, null, null, null, null, null]);
+
+  // Color variants
+  const [colorVariantsEnabled, setColorVariantsEnabled] = useState(false);
+  const [colorVariants, setColorVariants] = useState([]);
 
   useEffect(() => {
     if (isEdit) {
@@ -98,8 +113,23 @@ const AddDress = () => {
               discount_type: data.discount_type || 'percentage',
               discount_value: data.discount_value != null ? String(data.discount_value) : '',
               discount_offer_label: data.discount_offer_label || '',
+              default_color_name: data.default_color_name || 'Default',
+              default_color_hex: data.default_color_hex || '#8B7355',
             });
             setExistingUrls(data.images || []);
+
+            // Load existing color variants
+            if (data.color_variants && data.color_variants.length > 0) {
+              setColorVariantsEnabled(true);
+              setColorVariants(data.color_variants.map(v => ({
+                name: v.name || '',
+                hex: v.hex || '#C62828',
+                images: [null, null, null, null, null, null],
+                previews: [null, null, null, null, null, null],
+                existingUrls: v.images || [],
+                sizes: v.sizes || [],
+              })));
+            }
           }
         });
     }
@@ -142,6 +172,55 @@ const AddDress = () => {
     }));
   };
 
+  // ===== Color Variant Handlers =====
+  const addColorVariant = () => {
+    setColorVariants(prev => [...prev, EMPTY_VARIANT()]);
+  };
+
+  const removeColorVariant = (idx) => {
+    setColorVariants(prev => prev.filter((_, i) => i !== idx));
+  };
+
+  const updateVariantField = (idx, field, value) => {
+    setColorVariants(prev => prev.map((v, i) => i === idx ? { ...v, [field]: value } : v));
+  };
+
+  const toggleVariantSize = (variantIdx, size) => {
+    setColorVariants(prev => prev.map((v, i) => {
+      if (i !== variantIdx) return v;
+      const newSizes = v.sizes.includes(size) ? v.sizes.filter(s => s !== size) : [...v.sizes, size];
+      return { ...v, sizes: newSizes };
+    }));
+  };
+
+  const handleVariantImageSelect = (variantIdx, imgIdx, file) => {
+    if (!file) return;
+    setColorVariants(prev => prev.map((v, i) => {
+      if (i !== variantIdx) return v;
+      const newImages = [...v.images];
+      const newPreviews = [...v.previews];
+      newImages[imgIdx] = file;
+      newPreviews[imgIdx] = URL.createObjectURL(file);
+      return { ...v, images: newImages, previews: newPreviews };
+    }));
+  };
+
+  const removeVariantImage = (variantIdx, imgIdx) => {
+    setColorVariants(prev => prev.map((v, i) => {
+      if (i !== variantIdx) return v;
+      const newImages = [...v.images]; newImages[imgIdx] = null;
+      const newPreviews = [...v.previews]; newPreviews[imgIdx] = null;
+      return { ...v, images: newImages, previews: newPreviews };
+    }));
+  };
+
+  const removeVariantExistingImage = (variantIdx, imgIdx) => {
+    setColorVariants(prev => prev.map((v, i) => {
+      if (i !== variantIdx) return v;
+      return { ...v, existingUrls: v.existingUrls.filter((_, j) => j !== imgIdx) };
+    }));
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
 
@@ -153,7 +232,7 @@ const AddDress = () => {
     setUploading(true);
 
     try {
-      // Upload images to Cloudinary
+      // Upload main product images
       const uploadedUrls = [];
       
       for (let i = 0; i < images.length; i++) {
@@ -174,6 +253,35 @@ const AddDress = () => {
       }
 
       const allImages = [...existingUrls, ...uploadedUrls];
+
+      // Upload color variant images
+      let finalColorVariants = [];
+      if (colorVariantsEnabled && colorVariants.length > 0) {
+        for (let vi = 0; vi < colorVariants.length; vi++) {
+          const variant = colorVariants[vi];
+          const variantUploadedUrls = [];
+          for (let ii = 0; ii < variant.images.length; ii++) {
+            if (variant.images[ii]) {
+              try {
+                const url = await uploadToCloudinary(variant.images[ii], () => {});
+                variantUploadedUrls.push(url);
+                console.log(`[AddDress] Variant ${vi} Image ${ii} uploaded:`, url);
+              } catch (uploadErr) {
+                console.error(`[AddDress] Variant ${vi} Image ${ii} upload failed:`, uploadErr);
+                window.alert(`Image upload failed for color variant "${variant.name}": ${uploadErr.message}`);
+                setUploading(false);
+                return;
+              }
+            }
+          }
+          finalColorVariants.push({
+            name: variant.name.trim(),
+            hex: variant.hex,
+            images: [...(variant.existingUrls || []), ...variantUploadedUrls],
+            sizes: variant.sizes,
+          });
+        }
+      }
 
       let effectivePrice = form.price !== '' ? parseFloat(form.price) : null;
       let effectiveShowPrice = form.show_price;
@@ -208,6 +316,10 @@ const AddDress = () => {
         discount_type: form.discount_type || 'percentage',
         discount_value: form.discount_value !== '' ? parseFloat(form.discount_value) : null,
         discount_offer_label: form.discount_offer_label.trim() || null,
+        default_color_name: form.default_color_name.trim() || 'Default',
+        default_color_hex: form.default_color_hex.trim() || '#8B7355',
+        // Color variants
+        color_variants: colorVariantsEnabled ? finalColorVariants : [],
       };
 
       // Remove undefined keys (slug on edit)
@@ -346,29 +458,73 @@ const AddDress = () => {
                   </>
                 )}
 
-                <div className="form-group">
-                  <label className="form-label">Sizes Available</label>
-                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
-                    {SIZES.map(size => (
-                      <button
-                        key={size} type="button"
-                        onClick={() => toggleSize(size)}
-                        style={{
-                          padding: '8px 16px',
-                          border: '1.5px solid',
-                          borderColor: form.sizes.includes(size) ? 'var(--sage-dark)' : 'var(--border)',
-                          background: form.sizes.includes(size) ? 'var(--sage-dark)' : 'white',
-                          color: form.sizes.includes(size) ? 'white' : 'var(--text-mid)',
-                          borderRadius: 'var(--radius-sm)',
-                          fontSize: '0.875rem',
-                          fontWeight: 500,
-                          cursor: 'pointer',
-                          transition: 'all 0.2s',
-                        }}
-                      >{size}</button>
-                    ))}
+                {/* Sizes — only when color variants are NOT enabled */}
+                {!colorVariantsEnabled && (
+                  <div className="form-group">
+                    <label className="form-label">Sizes Available</label>
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+                      {SIZES.map(size => (
+                        <button
+                          key={size} type="button"
+                          onClick={() => toggleSize(size)}
+                          style={{
+                            padding: '8px 16px',
+                            border: '1.5px solid',
+                            borderColor: form.sizes.includes(size) ? 'var(--sage-dark)' : 'var(--border)',
+                            background: form.sizes.includes(size) ? 'var(--sage-dark)' : 'white',
+                            color: form.sizes.includes(size) ? 'white' : 'var(--text-mid)',
+                            borderRadius: 'var(--radius-sm)',
+                            fontSize: '0.875rem',
+                            fontWeight: 500,
+                            cursor: 'pointer',
+                            transition: 'all 0.2s',
+                          }}
+                        >{size}</button>
+                      ))}
+                    </div>
                   </div>
-                </div>
+                )}
+
+                {/* Default Color — only when color variants are NOT enabled */}
+                {!colorVariantsEnabled && (
+                  <div className="form-group" style={{ marginTop: 16 }}>
+                    <label className="form-label">Default Color Fallback <span style={{ color: 'var(--text-light)', fontWeight: 400 }}>(Shown when color variants are disabled)</span></label>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr auto', gap: 12 }}>
+                      <div>
+                        <input
+                          type="text"
+                          className="form-input"
+                          value={form.default_color_name}
+                          onChange={e => setForm({ ...form, default_color_name: e.target.value })}
+                          placeholder="Color Name (e.g. Navy Blue)"
+                        />
+                      </div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                        <input
+                          type="color"
+                          value={form.default_color_hex}
+                          onChange={e => setForm({ ...form, default_color_hex: e.target.value })}
+                          style={{
+                            width: 40,
+                            height: 40,
+                            border: '1.5px solid var(--border)',
+                            borderRadius: 8,
+                            cursor: 'pointer',
+                            padding: 2,
+                          }}
+                        />
+                        <input
+                          type="text"
+                          className="form-input"
+                          value={form.default_color_hex}
+                          onChange={e => setForm({ ...form, default_color_hex: e.target.value })}
+                          style={{ width: 90, fontFamily: 'monospace', fontSize: '0.8rem' }}
+                          placeholder="#8B7355"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
 
               <div className="admin-card" style={{ marginBottom: 20 }}>
@@ -516,6 +672,254 @@ const AddDress = () => {
                 )}
               </div>
 
+              {/* ====== COLOR VARIANTS CARD ====== */}
+              <div className="admin-card" style={{ marginBottom: 20, border: colorVariantsEnabled ? '1.5px solid #7b1fa2' : '1px solid var(--border)' }}>
+                <label className="toggle-wrap" style={{ cursor: 'pointer', marginBottom: colorVariantsEnabled ? 20 : 0 }}>
+                  <div className="toggle">
+                    <input
+                      type="checkbox"
+                      checked={colorVariantsEnabled}
+                      onChange={e => {
+                        setColorVariantsEnabled(e.target.checked);
+                        if (e.target.checked && colorVariants.length === 0) {
+                          setColorVariants([{
+                            name: form.default_color_name || 'Default',
+                            hex: form.default_color_hex || '#8B7355',
+                            images: [...images],
+                            previews: [...previews],
+                            existingUrls: [...existingUrls],
+                            sizes: [...form.sizes],
+                          }]);
+                        }
+                      }}
+                    />
+                    <span className="toggle-slider"></span>
+                  </div>
+                  <div>
+                    <div style={{ fontWeight: 600, fontSize: '0.95rem' }}>🎨 Enable Color Variants</div>
+                    <div style={{ fontSize: '0.75rem', color: 'var(--text-light)' }}>Add multiple color options with separate images and sizes for each variant</div>
+                  </div>
+                </label>
+
+                {colorVariantsEnabled && (
+                  <>
+                    {colorVariants.map((variant, vi) => (
+                      <div
+                        key={vi}
+                        style={{
+                          border: '1.5px solid var(--border)',
+                          borderRadius: 'var(--radius-sm)',
+                          padding: 16,
+                          marginBottom: 16,
+                          background: '#fafafa',
+                          position: 'relative',
+                        }}
+                      >
+                        {/* Variant Header */}
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                            <div
+                              style={{
+                                width: 28,
+                                height: 28,
+                                borderRadius: '50%',
+                                background: variant.hex,
+                                border: '2px solid rgba(0,0,0,0.1)',
+                                boxShadow: '0 1px 4px rgba(0,0,0,0.1)',
+                                flexShrink: 0,
+                              }}
+                            />
+                            <span style={{ fontWeight: 600, fontSize: '0.9rem', color: 'var(--text-dark)' }}>
+                              {variant.name || `Variant ${vi + 1}`}
+                            </span>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => removeColorVariant(vi)}
+                            style={{
+                              background: '#fff0f0',
+                              border: '1px solid #e8c4c4',
+                              borderRadius: 'var(--radius-sm)',
+                              padding: '4px 10px',
+                              color: '#c0392b',
+                              cursor: 'pointer',
+                              fontSize: '0.75rem',
+                              fontWeight: 600,
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: 4,
+                            }}
+                          >
+                            <AiOutlineDelete size={14} /> Remove
+                          </button>
+                        </div>
+
+                        {/* Color Name + Hex */}
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr auto', gap: 12, marginBottom: 14 }}>
+                          <div>
+                            <label className="form-label">Color Name</label>
+                            <input
+                              type="text"
+                              className="form-input"
+                              value={variant.name}
+                              onChange={e => updateVariantField(vi, 'name', e.target.value)}
+                              placeholder="e.g. Ruby Red, Navy Blue"
+                            />
+                          </div>
+                          <div>
+                            <label className="form-label">Color</label>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                              <input
+                                type="color"
+                                value={variant.hex}
+                                onChange={e => updateVariantField(vi, 'hex', e.target.value)}
+                                style={{
+                                  width: 40,
+                                  height: 40,
+                                  border: '1.5px solid var(--border)',
+                                  borderRadius: 8,
+                                  cursor: 'pointer',
+                                  padding: 2,
+                                }}
+                              />
+                              <input
+                                type="text"
+                                className="form-input"
+                                value={variant.hex}
+                                onChange={e => updateVariantField(vi, 'hex', e.target.value)}
+                                style={{ width: 90, fontFamily: 'monospace', fontSize: '0.8rem' }}
+                                placeholder="#C62828"
+                              />
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Variant Sizes */}
+                        <div style={{ marginBottom: 14 }}>
+                          <label className="form-label">Sizes for this color</label>
+                          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+                            {SIZES.map(size => (
+                              <button
+                                key={size}
+                                type="button"
+                                onClick={() => toggleVariantSize(vi, size)}
+                                style={{
+                                  padding: '6px 14px',
+                                  border: '1.5px solid',
+                                  borderColor: variant.sizes.includes(size) ? '#7b1fa2' : 'var(--border)',
+                                  background: variant.sizes.includes(size) ? '#7b1fa2' : 'white',
+                                  color: variant.sizes.includes(size) ? 'white' : 'var(--text-mid)',
+                                  borderRadius: 20,
+                                  fontSize: '0.8rem',
+                                  fontWeight: 500,
+                                  cursor: 'pointer',
+                                  transition: 'all 0.2s',
+                                }}
+                              >
+                                {size}
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+
+                        {/* Variant Existing Images */}
+                        {variant.existingUrls && variant.existingUrls.length > 0 && (
+                          <div style={{ marginBottom: 12 }}>
+                            <div style={{ fontSize: '0.72rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.1em', color: 'var(--text-light)', marginBottom: 6 }}>
+                              Current Images
+                            </div>
+                            <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+                              {variant.existingUrls.map((url, ei) => (
+                                <div key={ei} style={{ position: 'relative', width: 56, height: 72, borderRadius: 6, overflow: 'hidden', border: '1px solid var(--border)' }}>
+                                  <img src={url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                                  <button
+                                    type="button"
+                                    onClick={() => removeVariantExistingImage(vi, ei)}
+                                    style={{ position: 'absolute', top: 2, right: 2, width: 16, height: 16, background: 'rgba(0,0,0,0.6)', border: 'none', borderRadius: '50%', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', fontSize: 8 }}
+                                  ><AiOutlineClose size={8} /></button>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Variant Image Upload */}
+                        <div>
+                          <label className="form-label">Upload Images for this Color</label>
+                          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(6, 1fr)', gap: 6 }}>
+                            {variant.images.map((img, ii) => (
+                              <div key={ii}>
+                                <div
+                                  style={{
+                                    position: 'relative',
+                                    aspectRatio: '3/4',
+                                    border: '2px dashed var(--border)',
+                                    borderRadius: 6,
+                                    overflow: 'hidden',
+                                    background: variant.previews[ii] ? 'transparent' : '#f5f0fa',
+                                    display: 'flex',
+                                    flexDirection: 'column',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    cursor: 'pointer',
+                                    transition: 'border-color 0.2s',
+                                  }}
+                                  onClick={() => !variant.previews[ii] && document.getElementById(`variant-img-${vi}-${ii}`).click()}
+                                >
+                                  {variant.previews[ii] ? (
+                                    <>
+                                      <img src={variant.previews[ii]} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                                      <button
+                                        type="button"
+                                        onClick={(e) => { e.stopPropagation(); removeVariantImage(vi, ii); }}
+                                        style={{ position: 'absolute', top: 2, right: 2, width: 16, height: 16, background: 'rgba(0,0,0,0.6)', border: 'none', borderRadius: '50%', color: 'white', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                                      ><AiOutlineClose size={8} /></button>
+                                    </>
+                                  ) : (
+                                    <AiOutlineUpload size={14} style={{ color: 'var(--text-light)' }} />
+                                  )}
+                                </div>
+                                <input
+                                  id={`variant-img-${vi}-${ii}`}
+                                  type="file"
+                                  accept="image/jpeg,image/webp,image/png,image/jpg"
+                                  style={{ display: 'none' }}
+                                  onChange={e => handleVariantImageSelect(vi, ii, e.target.files[0])}
+                                />
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+
+                    {/* Add Variant Button */}
+                    <button
+                      type="button"
+                      onClick={addColorVariant}
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 8,
+                        padding: '10px 18px',
+                        background: 'white',
+                        border: '1.5px dashed #7b1fa2',
+                        borderRadius: 'var(--radius-sm)',
+                        color: '#7b1fa2',
+                        fontWeight: 600,
+                        fontSize: '0.85rem',
+                        cursor: 'pointer',
+                        width: '100%',
+                        justifyContent: 'center',
+                        transition: 'all 0.2s',
+                      }}
+                    >
+                      <AiOutlinePlus size={16} /> Add Another Color Variant
+                    </button>
+                  </>
+                )}
+              </div>
+
               <div className="admin-card" style={{ marginBottom: 20 }}>
                 <h3 style={{ fontFamily: 'var(--font-serif)', fontSize: '1.1rem', color: 'var(--sage-dark)', marginBottom: 12 }}>
                   Markdown Instructions
@@ -539,7 +943,7 @@ const AddDress = () => {
               {/* Images */}
               <div className="admin-card" style={{ marginBottom: 20 }}>
                 <h3 style={{ fontFamily: 'var(--font-serif)', fontSize: '1.1rem', color: 'var(--sage-dark)', marginBottom: 8 }}>
-                  Product Images
+                  Product Images {colorVariantsEnabled && <span style={{ fontSize: '0.72rem', color: 'var(--text-light)', fontWeight: 400 }}>(Default / fallback images)</span>}
                 </h3>
                 <p style={{ fontSize: '0.8rem', color: 'var(--text-light)', marginBottom: 16 }}>
                   First image is the cover. Max 5MB each. Up to 6 images. (Optional)

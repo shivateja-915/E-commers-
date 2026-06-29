@@ -1,6 +1,6 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { AiOutlineHeart, AiFillHeart, AiOutlineArrowLeft } from 'react-icons/ai';
+import { AiOutlineArrowLeft } from 'react-icons/ai';
 import { supabase } from '../lib/supabase';
 import { useFavourites } from '../context/FavouritesContext';
 import ImageGallery from '../components/ImageGallery';
@@ -8,6 +8,7 @@ import DescriptionBox from '../components/DescriptionBox';
 import WhatsAppButton from '../components/WhatsAppButton';
 import ProductCard from '../components/ProductCard';
 import Footer from '../components/Footer';
+import { getThumbnailUrl } from '../lib/cloudinary';
 import './ProductDetail.css';
 
 const ProductDetail = () => {
@@ -15,8 +16,10 @@ const ProductDetail = () => {
   const [product, setProduct] = useState(null);
   const [related, setRelated] = useState([]);
   const [selectedSize, setSelectedSize] = useState('');
+  const [selectedColorIdx, setSelectedColorIdx] = useState(0);
   const [loading, setLoading] = useState(true);
   const { isFavourite, toggleFavourite } = useFavourites();
+  const sizesScrollRef = useRef(null);
 
   useEffect(() => {
     window.scrollTo(0, 0);
@@ -29,6 +32,7 @@ const ProductDetail = () => {
         .single();
       setProduct(data);
       setSelectedSize('');
+      setSelectedColorIdx(0);
 
       if (data?.category_id) {
         const { data: rel } = await supabase
@@ -60,6 +64,20 @@ const ProductDetail = () => {
 
   const fav = isFavourite(product.id);
 
+  // Color Variants logic — always show colors panel
+  // If no explicit color_variants, create a synthetic default from the product's existing data
+  const explicitVariants = product.color_variants && product.color_variants.length > 0;
+  const effectiveColorVariants = explicitVariants
+    ? product.color_variants
+    : (product.images && product.images.length > 0)
+      ? [{ name: product.default_color_name || 'Default', hex: product.default_color_hex || '#8B7355', images: product.images, sizes: product.sizes || [] }]
+      : [];
+  const hasColorVariants = effectiveColorVariants.length > 0;
+  const safeColorIdx = selectedColorIdx < effectiveColorVariants.length ? selectedColorIdx : 0;
+  const activeVariant = hasColorVariants ? effectiveColorVariants[safeColorIdx] : null;
+  const activeImages = hasColorVariants ? (activeVariant?.images || []) : (product.images || []);
+  const activeSizes = hasColorVariants ? (activeVariant?.sizes || []) : (product.sizes || []);
+
   // Format price — respects show_price flag and optional price_display text override
   const showPrice = product.show_price !== false && (product.price != null || product.price_display);
   const rawPrice = showPrice
@@ -73,6 +91,17 @@ const ProductDetail = () => {
       ? product.discount_original_price - (product.discount_original_price * product.discount_value / 100)
       : product.discount_original_price - product.discount_value)
     : null;
+
+  // Sizes scroll handlers
+  const scrollSizes = (direction) => {
+    if (sizesScrollRef.current) {
+      const scrollAmount = 120;
+      sizesScrollRef.current.scrollBy({
+        left: direction === 'left' ? -scrollAmount : scrollAmount,
+        behavior: 'smooth',
+      });
+    }
+  };
 
   return (
     <div className="product-detail floral-bg page-enter">
@@ -112,52 +141,24 @@ const ProductDetail = () => {
             <h1 className="product-detail__name">{product.name}</h1>
           </div>
 
-          {/* Image Gallery with swipe + zoom */}
-          <ImageGallery images={product.images || []} productName={product.name} />
+          {/* Image Gallery with swipe + zoom + floating heart */}
+          <ImageGallery
+            images={activeImages}
+            productName={product.name}
+            isFavourite={fav}
+            onToggleFavourite={() => toggleFavourite(product.id)}
+          />
 
-          {/* Available Sizes — below images, circle style */}
-          {product.sizes?.length > 0 && product.in_stock !== false && (
-            <div className="product-detail__sizes-panel">
-              <h3 className="product-detail__section-label">
-                Available Sizes
-                {selectedSize && <span className="product-detail__selected-size"> — {selectedSize}</span>}
-              </h3>
-              <div className="product-detail__sizes">
-                {product.sizes.map(size => (
-                  <button
-                    key={size}
-                    className={`product-detail__size-btn ${selectedSize === size ? 'active' : ''}`}
-                    onClick={() => setSelectedSize(size === selectedSize ? '' : size)}
-                  >
-                    {size}
-                  </button>
-                ))}
+          {/* Price Row (moved to immediately below images) */}
+          <div className="product-detail__price-row">
+            {/* Offer Label */}
+            {discountEnabled && product.discount_offer_label && (
+              <div className="product-detail__offer-label">
+                🏷️ {product.discount_offer_label}
               </div>
-            </div>
-          )}
+            )}
 
-          {/* Price + Add to Favourites Row */}
-          <div className="product-detail__price-fav-row">
-            {/* Left Column: Fav Button + Offer Label */}
-            <div className="product-detail__fav-col">
-              <button
-                className={`product-detail__fav-btn ${fav ? 'active' : ''}`}
-                onClick={() => toggleFavourite(product.id)}
-                aria-label={fav ? 'Remove from favourites' : 'Add to favourites'}
-              >
-                {fav ? <AiFillHeart size={18} /> : <AiOutlineHeart size={18} />}
-                <span>{fav ? 'Saved' : 'Add to Favourites'}</span>
-              </button>
-
-              {/* Offer Label — shown below the favourite button */}
-              {discountEnabled && product.discount_offer_label && (
-                <div className="product-detail__offer-label">
-                  🏷️ {product.discount_offer_label}
-                </div>
-              )}
-            </div>
-
-            {/* Price display — right */}
+            {/* Price display — standard */}
             {rawPrice && !discountEnabled && (
               <div className="product-detail__price-bar">
                 <span className="product-detail__price-label">PRICE</span>
@@ -173,7 +174,6 @@ const ProductDetail = () => {
                 <div className="product-detail__discount-top">
                   <span className="product-detail__discount-sale">₹{Number(discountedPrice).toLocaleString('en-IN', { maximumFractionDigits: 0 })}</span>
                   <span className="product-detail__discount-badge">
-                    {/* Badge always shows the % or ₹ calculation */}
                     {product.discount_type === 'percentage'
                       ? `${product.discount_value}% OFF`
                       : `₹${Number(product.discount_value).toLocaleString('en-IN')} OFF`}
@@ -189,6 +189,63 @@ const ProductDetail = () => {
               </div>
             )}
           </div>
+
+          {/* ===== AVAILABLE COLORS & SIZES ROW ===== */}
+          <div className="product-detail__colors-sizes-row">
+            
+            {/* COLORS PANEL */}
+            {hasColorVariants && (
+              <div className="product-detail__colors-panel">
+                <h3 className="product-detail__section-label">Available Colors</h3>
+                <div className="product-detail__colors">
+                  {effectiveColorVariants.map((variant, idx) => (
+                    <button
+                      key={idx}
+                      className={`product-detail__color-swatch ${safeColorIdx === idx ? 'active' : ''}`}
+                      onClick={() => {
+                        setSelectedColorIdx(idx);
+                        setSelectedSize('');
+                      }}
+                      title={variant.name}
+                    >
+                      <span
+                        className="product-detail__color-circle"
+                        style={{ background: variant.hex }}
+                      />
+                      <span className="product-detail__color-name">{variant.name}</span>
+                    </button>
+                  ))}
+                  {effectiveColorVariants.length > 5 && (
+                    <div className="product-detail__color-more">
+                      +{effectiveColorVariants.length - 5}
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* SIZES PANEL */}
+            {activeSizes.length > 0 && product.in_stock !== false && (
+              <div className="product-detail__sizes-panel">
+                <h3 className="product-detail__section-label">
+                  Available Sizes
+                </h3>
+                <div className="product-detail__sizes">
+                  {activeSizes.map(size => (
+                    <button
+                      key={size}
+                      className={`product-detail__size-btn ${selectedSize === size ? 'active' : ''}`}
+                      onClick={() => setSelectedSize(size === selectedSize ? '' : size)}
+                    >
+                      {size}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+
+
 
         </div>
 
