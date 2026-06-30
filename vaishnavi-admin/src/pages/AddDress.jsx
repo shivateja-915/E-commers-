@@ -58,6 +58,7 @@ const AddDress = () => {
   const [form, setForm] = useState({
     name: '',
     super_heading: '',
+    display_id: '',
     sizes: [],
     description: DESCRIPTION_TEMPLATE,
     is_featured: false,
@@ -99,6 +100,7 @@ const AddDress = () => {
             setForm({
               name: data.name || '',
               super_heading: data.super_heading || '',
+              display_id: data.display_id || '',
               sizes: data.sizes || [],
               description: data.description || DESCRIPTION_TEMPLATE,
               is_featured: data.is_featured || false,
@@ -298,6 +300,7 @@ const AddDress = () => {
       const productData = {
         name: form.name.trim(),
         super_heading: form.super_heading.trim() || null,
+        display_id: form.display_id ? parseInt(form.display_id, 10) : undefined,
         slug: isEdit ? undefined : generateSlug(form.name.trim()),
         sizes: form.sizes,
         description: form.description,
@@ -411,6 +414,14 @@ const AddDress = () => {
                     type="text" className="form-input"
                     value={form.name} onChange={e => setForm({ ...form, name: e.target.value })}
                     placeholder="e.g. Floral Georgette Anarkali" required
+                  />
+                </div>
+                <div className="form-group">
+                  <label className="form-label">Custom Display ID Number (Optional)</label>
+                  <input
+                    type="number" className="form-input"
+                    value={form.display_id} onChange={e => setForm({ ...form, display_id: e.target.value })}
+                    placeholder="e.g. 12 (Leave empty to auto-generate)"
                   />
                 </div>
                 <div className="form-group">
