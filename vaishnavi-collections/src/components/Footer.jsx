@@ -48,7 +48,7 @@ const Footer = () => {
 
         <div className="footer__bottom">
           <p>© {new Date().getFullYear()} Vaishnavi Collections. All rights reserved.</p>
-          <p>Designed & Developed with <AiOutlineHeart style={{ display: 'inline', verticalAlign: 'middle', color: '#e53e3e' }} /> by Shiva in Hyderabad</p>
+          <p>Designed & Developed by Shiva - Hyderabad</p>
         </div>
       </div>
     </footer>

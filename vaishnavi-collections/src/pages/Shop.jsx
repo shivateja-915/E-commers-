@@ -19,7 +19,7 @@ const Shop = () => {
       .from('products')
       .select('*, categories(name)')
       .eq('is_available', true)
-      .order('display_id', { ascending: false });
+      .order('display_id', { ascending: true });
 
     if (filters.Category) {
       const { data: cat } = await supabase
